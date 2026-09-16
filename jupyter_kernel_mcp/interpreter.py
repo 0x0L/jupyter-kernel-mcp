@@ -109,7 +109,9 @@ class JupyterKernelManager:
             "--KernelManager.autorestart=False",
             cwd=cwd,
             env=env,
-            stdin=asyncio.subprocess.DEVNULL,
+            # The relay watches EOF on this private pipe, including if the server
+            # is killed and cannot run its lifespan cleanup.
+            stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.DEVNULL,
             stderr=None,
         )
@@ -166,6 +168,8 @@ class JupyterKernelManager:
                 except TimeoutError:
                     self.process.kill()
                     await self.process.wait()
+        if self.process is not None and self.process.stdin is not None:
+            self.process.stdin.close()
         if self._directory is not None:
             self._directory.cleanup()
             self._directory = None
