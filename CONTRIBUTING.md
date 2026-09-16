@@ -1,9 +1,10 @@
 # Contributing
 
 For bug reports, include the server version or commit, operating system, Python
-version, configured Jupyter executable, kernelspec language, MCP client, and a minimal reproduction. Include the
-expected behavior, actual execution metadata, and relevant logs. Remove credentials,
-private file contents, and other sensitive data before sharing a report.
+version, configured Jupyter executable, kernel name and language, MCP client, and a
+minimal reproduction. Include expected behavior, execution metadata, and relevant
+logs. Remove credentials, private file contents, and other sensitive data before
+sharing a report.
 
 Discuss changes to the six-tool contract before implementing a large feature.
 Keep pull requests focused and explain the user-visible behavior and validation.
@@ -27,48 +28,45 @@ they do not need or alter your user kernelspec registration. Tests execute real
 code and start kernel subprocesses. Linux is covered by CI on Python 3.12–3.14;
 Windows, macOS, R, and Julia are not covered by that matrix.
 
-For manual MCP testing, copy the [client examples](examples/) and configure the
-kernel environment as described in the [README](README.md#configuration).
-Local `.mcp.json` and `.codex/config.toml` files are ignored. Restart the MCP
-connection after editing server code.
-
 ## Use this checkout in an agent
 
-Copy the [Claude Code example](examples/mcp.json) to `.mcp.json`, or merge the
-[Codex example](examples/codex-config.toml) into `.codex/config.toml`.
-Both local configuration files are ignored by Git. Replace the example absolute
-paths with your checkout and desired working directory. Both examples run:
+Add this to your client's `mcp.json`, replacing the absolute paths with your
+checkout and desired working directory:
 
-```bash
-uv run --project /absolute/path/to/jupyter-kernel-mcp --locked --dev jupyter-kernel-mcp \
-  --jupyter /absolute/path/to/jupyter-kernel-mcp/.venv/bin/jupyter \
-  --kernel python3 \
-  --cwd /absolute/path/to/project
+```json
+{
+  "mcpServers": {
+    "jupyter-python": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project", "/absolute/path/to/jupyter-kernel-mcp",
+        "--locked",
+        "--dev",
+        "jupyter-kernel-mcp",
+        "--jupyter", "/absolute/path/to/jupyter-kernel-mcp/.venv/bin/jupyter",
+        "--kernel", "python3",
+        "--cwd", "/absolute/path/to/project"
+      ]
+    }
+  }
+}
 ```
 
-`--dev` includes `ipykernel` and Matplotlib in the project's environment.
-Select its `.venv/bin/jupyter` and `python3` kernel to use those libraries, or
-point `--jupyter` at another installation. An explicitly registered kernelspec
-can still select a different interpreter.
-When upgrading an existing local config, add `"--jupyter", "/absolute/path/to/jupyter-kernel-mcp/.venv/bin/jupyter"`
-to the server's `args` in `.mcp.json` or `.codex/config.toml`, alongside
-`"--kernel", "python3"`. Keep any existing per-tool approval settings.
-After restarting the MCP connection, call `status()` and check that `jupyter`
-reports your chosen executable and `kernel_name` reports `python3`.
+`--project` points to this checkout; `--cwd` sets the kernel's working directory.
+`--locked` uses the committed lockfile, and `--dev` includes ipykernel and
+Matplotlib. The example uses the checkout's Jupyter environment; you can select
+another installation and kernel with `--jupyter` and `--kernel`.
 
-Restart the MCP connection after changing source code or launch arguments. Claude Code may ask to
-approve the project server; Codex loads project configuration for trusted projects.
-
-[`uv run --project`](https://docs.astral.sh/uv/reference/cli/#uv-run) selects a local
-project directory and runs its editable installation using `uv.lock`.
-`uv run file:///path/to/project` does not launch a project package.
-To use the checkout from another project's MCP configuration, keep `--project`
-pointing here and change `--jupyter`, `--kernel`, and `--cwd` for that project's installed kernel
-and working directory.
+For Claude Code, use [`.mcp.json`](examples/mcp.json); for Codex, use the
+[TOML example](examples/codex-config.toml) in `.codex/config.toml`. Both local
+configuration files are ignored by Git. Restart the MCP connection after changing
+source code or launch arguments.
 
 ## Changes and dependencies
 
-Add regression tests for changed behavior. Keep the README and usage examples focused on human setup and workflows.
+Add regression tests for changed behavior. Keep the README and usage examples
+focused on human setup and workflows.
 Document tool selection, output consumption, polling, and recovery in MCP server
 instructions, tool descriptions, and response field descriptions; agents receive
 these through discovery. Verify that metadata through a real MCP client.
